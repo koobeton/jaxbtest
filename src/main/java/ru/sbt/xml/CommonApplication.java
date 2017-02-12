@@ -3,12 +3,12 @@ package ru.sbt.xml;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
-@XmlRootElement
-public class Application {
+@XmlRootElement(name = "Application")
+public class CommonApplication {
 
-    @XmlElement
     private String applicationID;
 
+    @XmlElement(name = "applicationID")
     public String getApplicationID() {
         return applicationID;
     }
@@ -22,7 +22,7 @@ public class Application {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Application that = (Application) o;
+        CommonApplication that = (CommonApplication) o;
 
         return applicationID.equals(that.applicationID);
     }
@@ -34,7 +34,7 @@ public class Application {
 
     @Override
     public String toString() {
-        return "Application{" +
+        return "CommonApplication{" +
                 "applicationID='" + applicationID + '\'' +
                 '}';
     }
