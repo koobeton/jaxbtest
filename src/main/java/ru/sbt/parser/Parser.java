@@ -1,6 +1,8 @@
 package ru.sbt.parser;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.oxm.ValidationFailureException;
+import org.springframework.oxm.XmlMappingException;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 
 import javax.xml.transform.stream.StreamSource;
@@ -12,10 +14,13 @@ public class Parser {
     private Jaxb2Marshaller marshaller;
 
     @SuppressWarnings("unchecked")
-    public <T> T objectFromNotXmlRootElementString(String source, Class<T> targetClass) {
-        marshaller.setMappedClass(targetClass);
-        T result = (T) marshaller.unmarshal(new StreamSource(new StringReader(source)));
-        marshaller.setMappedClass(null);
-        return result;
+    public <T> T objectFromNotXmlRootElementString(String source, Class<T> targetClass) throws XmlMappingException {
+        if (source == null) throw new ValidationFailureException("Source must not to be null");
+        try {
+            marshaller.setMappedClass(targetClass);
+            return (T) marshaller.unmarshal(new StreamSource(new StringReader(source)));
+        } finally {
+            marshaller.setMappedClass(null);
+        }
     }
 }

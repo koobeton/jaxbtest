@@ -4,6 +4,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.oxm.XmlMappingException;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 import org.springframework.test.context.junit4.SpringRunner;
 import ru.sbt.parser.Parser;
@@ -22,6 +23,8 @@ public class JaxbtestApplicationTests {
 
     private static final String APPLICATION_XML = "<Application><applicationID>12345</applicationID></Application>";
     private static final String APPLICATION_XML_WITH_DECLARATION = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Application><applicationID>12345 with declaration</applicationID></Application>";
+
+    private static final String BAD_APPLICATION_XML = "Application><applicationID>12345</applicationID></Application>";
 
     @Autowired
     private Jaxb2Marshaller marshaller;
@@ -68,6 +71,16 @@ public class JaxbtestApplicationTests {
 
         GetApplicationDetailsRs.Application app = parser.objectFromNotXmlRootElementString(APPLICATION_XML_WITH_DECLARATION, GetApplicationDetailsRs.Application.class);
         System.out.println(app);
+    }
+
+    @Test(expected = XmlMappingException.class)
+    public void testBadXml() throws Exception {
+        parser.objectFromNotXmlRootElementString(BAD_APPLICATION_XML, GetApplicationDetailsRs.Application.class);
+    }
+
+    @Test(expected = XmlMappingException.class)
+    public void testNullXml() throws Exception {
+        parser.objectFromNotXmlRootElementString(null, GetApplicationDetailsRs.Application.class);
     }
 
     private void delimeter() {
