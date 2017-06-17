@@ -14,7 +14,7 @@ public class Parser {
     private Jaxb2Marshaller marshaller;
 
     @SuppressWarnings("unchecked")
-    public <T> T objectFromNotXmlRootElementString(String source, Class<T> targetClass) throws XmlMappingException {
+    public <T> T objectFromNotRootXmlElementString(String source, Class<T> targetClass) throws XmlMappingException {
         if (source == null) throw new ValidationFailureException("Source must not to be null");
         try {
             marshaller.setMappedClass(targetClass);

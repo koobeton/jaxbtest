@@ -3,28 +3,36 @@ package ru.sbt.test;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.Resource;
 import org.springframework.oxm.XmlMappingException;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 import org.springframework.test.context.junit4.SpringRunner;
 import ru.sbt.parser.Parser;
+import ru.sbt.xml.CommonApplication;
 import ru.sbt.xml.GetApplicationDetailsRs;
 
 import javax.xml.transform.stream.StreamSource;
-import java.io.StringReader;
-import java.util.stream.Stream;
+
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+import static ru.sbt.test.util.FileUtils.readResourceAsString;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
 public class JaxbtestApplicationTests {
 
-    private static final String GADRs_XML = "<GetApplicationDetailsRs><Application><applicationID>GADRs</applicationID></Application></GetApplicationDetailsRs>";
-    private static final String GADRs_XML_WITH_DECLARATION = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><GetApplicationDetailsRs><Application><applicationID>GADRs with declaration</applicationID></Application></GetApplicationDetailsRs>";
-
-    private static final String APPLICATION_XML = "<Application><applicationID>12345</applicationID></Application>";
-    private static final String APPLICATION_XML_WITH_DECLARATION = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Application><applicationID>12345 with declaration</applicationID></Application>";
-
-    private static final String BAD_APPLICATION_XML = "Application><applicationID>12345</applicationID></Application>";
+    @Value("classpath:xml/gadrs.xml")
+    private Resource gadrsXml;
+    @Value("classpath:xml/gadrs_with_declaration.xml")
+    private Resource gadrsWithDeclarationXml;
+    @Value("classpath:xml/application.xml")
+    private Resource applicationXml;
+    @Value("classpath:xml/application_with_declaration.xml")
+    private Resource applicationWithDeclarationXml;
+    @Value("classpath:xml/bad_application.xml")
+    private Resource badApplicationXml;
 
     @Autowired
     private Jaxb2Marshaller marshaller;
@@ -33,57 +41,48 @@ public class JaxbtestApplicationTests {
     private Parser parser;
 
     @Test
-    public void printMarshallerDetails() throws Exception {
-        delimeter();
-
-        System.out.println(marshaller.getContextPath());
-        Stream.of(marshaller.getPackagesToScan()).forEach(System.out::println);
-        Stream.of(marshaller.getClassesToBeBound()).forEach(System.out::println);
+    @SuppressWarnings("unchecked")
+    public void testMarshallerDetails() throws Exception {
+        assertNull(marshaller.getContextPath());
+        assertThat(marshaller.getPackagesToScan(), arrayWithSize(1));
+        assertThat(marshaller.getPackagesToScan(), arrayContaining("ru.sbt.xml"));
+        assertThat(marshaller.getClassesToBeBound(), arrayWithSize(2));
+        assertThat(marshaller.getClassesToBeBound(), arrayContaining(CommonApplication.class, GetApplicationDetailsRs.class));
     }
 
     @Test
     public void testGADRsXml() throws Exception {
-        delimeter();
-
-        GetApplicationDetailsRs gadrs = (GetApplicationDetailsRs) marshaller.unmarshal(new StreamSource(new StringReader(GADRs_XML)));
-        System.out.println(gadrs);
+        GetApplicationDetailsRs gadrs = (GetApplicationDetailsRs) marshaller.unmarshal(new StreamSource(gadrsXml.getFile()));
+        assertNotNull(gadrs.getApplication());
+        assertEquals("GADRs", gadrs.getApplication().getApplicationID());
     }
 
     @Test
     public void testGADRsXmlWithDeclaration() throws Exception {
-        delimeter();
-
-        GetApplicationDetailsRs gadrs = (GetApplicationDetailsRs) marshaller.unmarshal(new StreamSource(new StringReader(GADRs_XML_WITH_DECLARATION)));
-        System.out.println(gadrs);
+        GetApplicationDetailsRs gadrs = (GetApplicationDetailsRs) marshaller.unmarshal(new StreamSource(gadrsWithDeclarationXml.getFile()));
+        assertNotNull(gadrs.getApplication());
+        assertEquals("GADRs with declaration", gadrs.getApplication().getApplicationID());
     }
 
     @Test
     public void testApplicationXml() throws Exception {
-        delimeter();
-
-        GetApplicationDetailsRs.Application app = parser.objectFromNotXmlRootElementString(APPLICATION_XML, GetApplicationDetailsRs.Application.class);
-        System.out.println(app);
+        GetApplicationDetailsRs.Application app = parser.objectFromNotRootXmlElementString(readResourceAsString(applicationXml), GetApplicationDetailsRs.Application.class);
+        assertEquals("12345", app.getApplicationID());
     }
 
     @Test
     public void testApplicationXmlWithDeclaration() throws Exception {
-        delimeter();
-
-        GetApplicationDetailsRs.Application app = parser.objectFromNotXmlRootElementString(APPLICATION_XML_WITH_DECLARATION, GetApplicationDetailsRs.Application.class);
-        System.out.println(app);
+        GetApplicationDetailsRs.Application app = parser.objectFromNotRootXmlElementString(readResourceAsString(applicationWithDeclarationXml), GetApplicationDetailsRs.Application.class);
+        assertEquals("12345 with declaration", app.getApplicationID());
     }
 
     @Test(expected = XmlMappingException.class)
     public void testBadXml() throws Exception {
-        parser.objectFromNotXmlRootElementString(BAD_APPLICATION_XML, GetApplicationDetailsRs.Application.class);
+        parser.objectFromNotRootXmlElementString(readResourceAsString(badApplicationXml), GetApplicationDetailsRs.Application.class);
     }
 
     @Test(expected = XmlMappingException.class)
     public void testNullXml() throws Exception {
-        parser.objectFromNotXmlRootElementString(null, GetApplicationDetailsRs.Application.class);
-    }
-
-    private void delimeter() {
-        System.out.println("\n*****\n");
+        parser.objectFromNotRootXmlElementString(null, GetApplicationDetailsRs.Application.class);
     }
 }
